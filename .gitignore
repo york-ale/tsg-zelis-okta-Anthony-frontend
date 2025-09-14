@@ -1,1 +1,7 @@
 FASAD.UI/appsettings.json
+FASAD.UI/bin
+FASAD.UI/obj
+FASAD.UI.Tests/bin
+FASAD.UI.Tests/obj
+FASAD.UI/.config
+FASAD.UI/.graphqlrc.json
