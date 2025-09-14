@@ -1,0 +1,104 @@
+@page "/roles/assign"
+@rendermode InteractiveServer
+@inject IUserService userService
+@inject IRoleService roleService
+@inject IAuditService auditService
+@inject AuthenticationStateProvider authenticationStateProvider
+
+<PageTitle>Assign User Role</PageTitle>
+
+<h1>Assign User Role</h1>
+<br>
+
+@if(permission == "SecurityAuditor")
+{
+    @if (users != null)
+    {
+        <div class="form-group">
+            <h5>User</h5>
+            <select @bind="affectedUserEmail" class="form-control">
+                <option value="">-- Select User --</option>
+                @foreach (var user in users)
+                {
+                    <option value="@user.Email">@user.Email</option>
+                }
+            </select>
+        </div>
+    }
+    <br>
+    @if (roles != null)
+    {
+        <div class="form-group">
+            <h5>Role</h5>
+            <select @bind="toRoleName" class="form-control">
+                <option value="">-- Select Role --</option>
+                @foreach (var role in roles)
+                {
+                    <option value="@role.Name">@role.Name</option>
+                }
+            </select>
+        </div>
+    }
+    <br>
+    <button class="btn btn-success" @onclick="AssignUserRole">Save</button>
+    <br>
+    <br>
+    @if (message != "")
+    {
+        <p>@message</p>
+    }
+}
+else
+{
+    <p>Insufficient access. Contact your admin.</p>
+}
+
+@code {
+    private UserDto[]? users;
+    private RoleDto[]? roles;
+    private string affectedUserEmail = "";
+    private string toRoleName = "";
+    private string message = "";
+    private string permission = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        users = (await userService.GetUsers())
+            .ToArray();
+
+        roles = (await roleService.GetRoles())
+            .ToArray();
+
+        var authState = await authenticationStateProvider.GetAuthenticationStateAsync();
+
+        var userEmail = authState.User
+                .FindFirst(c => c.Type == "preferred_username")?.Value!;
+
+        var roleName = (await userService.GetUsers())
+                .FirstOrDefault(u => u.Email == userEmail)?.RoleName!;
+        
+        permission = roleName;
+    }
+
+    public async Task AssignUserRole()
+    {
+        if (affectedUserEmail == "" || toRoleName == "")
+        {
+            message = "Please select both a user and a role.";
+        }
+        else
+        {
+            var authState = await authenticationStateProvider.GetAuthenticationStateAsync();
+
+            var authorUserEmail = authState.User
+                .FindFirst(c => c.Type == "preferred_username")?.Value!;
+
+            var fromRoleName = (await userService.GetUsers())
+                .FirstOrDefault(u => u.Email == affectedUserEmail)?.RoleName!;
+
+            await userService.AssignUserRole(affectedUserEmail, toRoleName);
+            await auditService.RoleAssignedEvent(authorUserEmail, affectedUserEmail, fromRoleName, toRoleName);
+            message = "Role assigned successfully!";
+        }
+    }
+}
