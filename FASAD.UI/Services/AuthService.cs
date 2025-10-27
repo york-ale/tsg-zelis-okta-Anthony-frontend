@@ -52,8 +52,6 @@ public class AuthService : IAuthService
 
         await _auditService.LoginSuccessEvent(email, "Okta");
 
-
-
         // NEED TO REMOVE
         Console.WriteLine($"Access Token: {accessToken}");
         Console.WriteLine($"ID Token: {idToken}");
